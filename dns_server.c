@@ -38,7 +38,6 @@ int main() {
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(2053);
 
-    // Add socket option to reuse address
     int opt = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("setsockopt failed");
