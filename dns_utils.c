@@ -7,52 +7,42 @@
 #include <errno.h>
 #include <pthread.h>
 
-// Global cache and synchronization
+
 static dns_cache_entry dns_cache[CACHE_SIZE];
 static pthread_mutex_t cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// Multiple DNS servers with failover
 static dns_server dns_servers[MAX_DNS_SERVERS] = {
     {"8.8.8.8", 0, 0},    // Google DNS
     {"1.1.1.1", 0, 0},    // Cloudflare DNS
     {"9.9.9.9", 0, 0}     // Quad9 DNS
 };
 
-// Function to extract the query type from the DNS query
+
 int extract_query_type(unsigned char *query) {
-    // Assuming the query type is at a fixed position
-    // This is a simplified example; real parsing would be more complex
     return (query[12] << 8) | query[13];
 }
 
 int process_dns_query(unsigned char *query, int query_size, unsigned char *response) {
-    // Get the Query ID from the first two bytes
     uint16_t query_id = (query[0] << 8) | query[1];
     printf("Query ID: 0x%04x\n", query_id);
 
-    int offset = 12;  // Skip the header
+    int offset = 12; 
     int response_offset = 0;
 
-    // Write DNS header with the same ID and response bit set
     write_dns_header(response, &response_offset, query_id, 1);
 
-    // Skip the question name
     while (offset < query_size && query[offset] != 0) {
         offset += query[offset] + 1;
     }
-    offset++; // Skip the terminating zero
+    offset++; 
 
-    // Read query type
     uint16_t query_type = (query[offset] << 8) | query[offset + 1];
     printf("Query type: %d\n", query_type);
 
-    // Copy the original question to response
     memcpy(response + response_offset, query + 12, offset - 12 + 4);  // Copy question including type and class
     response_offset += offset - 12 + 4;
 
-    // Write answer section
     if (query_type == A_RECORD) {
-        // Example A record response (192.0.2.1)
         write_dns_answer(response, &response_offset, query + 12, 
                         A_RECORD, (unsigned char*)"\xC0\x00\x02\x01");  // 192.0.2.1
         return response_offset;
